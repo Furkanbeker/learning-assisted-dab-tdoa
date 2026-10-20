@@ -1,3 +1,10 @@
 # Large binary files are stored with Git LFS (run "git lfs install" once).
 *.cf32 filter=lfs diff=lfs merge=lfs -text
 *.mov  filter=lfs diff=lfs merge=lfs -text
+
+# Keep result files byte-identical on every platform (no line-ending conversion).
+*.csv    -text
+*.csv.gz binary
+*.npy    binary
+*.fig    binary
+*.pdf    binary

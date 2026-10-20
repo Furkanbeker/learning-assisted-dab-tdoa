@@ -16,7 +16,10 @@ cancel in the receiver-centric TDOA (UAV minus REF). The repository contains
 2. a **Python pipeline** that trains the learning-assisted corrections
    (L1, B1, B3) and produces the result tables and figures, and
 3. the **DAB generation tools** (GUI + ODR scripts) used to create the DAB
-   waveform and to transmit it with an ADALM-PLUTO for an over-the-air test.
+   waveform and to transmit it with an ADALM-PLUTO for an over-the-air test,
+   and
+4. the **dataset** used in the paper (10,000 scenarios, 500,000 epochs) in
+   [`dataset_results/`](dataset_results/README.md).
 
 ```
  DAB IQ waveform ─► link simulation ─► PRS TOA ─► TDOA ─► GN ─► CT-EKF ─► dataset (CSV)
@@ -50,6 +53,12 @@ cancel in the receiver-centric TDOA (UAV minus REF). The repository contains
 ├── data/dab_iq/
 │   ├── basic.cf32                    DAB Mode-I baseband IQ waveform
 │   └── basic.json                    Metadata of the waveform
+├── dataset_results/                  Dataset of the paper (see its README)
+│   ├── dab_soop_tdoa_ctekf/          Full per-epoch table, 10 gzip parts
+│   ├── dab_soop_tdoa_ai_ready_gn_correction/   AI-ready table, 10 gzip parts
+│   ├── dab_soop_tdoa_summary.csv     One row per scenario
+│   ├── tables/                       GN vs CT-EKF tables (Tables 2 and 3)
+│   └── figures/                      Diagnostic figures (PNG + MATLAB .fig)
 ├── media/                            Photos and video of the over-the-air test
 └── results/                          Created by the code (not tracked by git)
 ```
@@ -89,6 +98,39 @@ git clone <repository URL>
 
 If the file is only a small text pointer, run `git lfs pull`.
 
+## Dataset
+
+The dataset used in the paper is included in
+[`dataset_results/`](dataset_results/README.md), so it can be used without
+running the simulator: the full table (149 columns), the AI-ready table
+with the train/val/test `split` (110 columns), the per-scenario summary,
+Tables 2 and 3, and the diagnostic figures.
+
+GitHub does not accept files larger than 100 MB, so the two large tables
+(1.16 GB and 820 MB as CSV) are stored as ten gzip-compressed parts each.
+Every part contains 1,000 complete scenarios and its own header row, and
+the parts reassemble byte for byte into the original CSV files (SHA-256
+checksums are provided). To load the AI-ready table directly:
+
+```python
+import glob
+import pandas as pd
+
+files = sorted(glob.glob("dataset_results/dab_soop_tdoa_ai_ready_gn_correction/*.csv.gz"))
+df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
+```
+
+To reassemble the original CSV files (e.g. for `--data`):
+
+```bash
+cd dataset_results
+zcat dab_soop_tdoa_ai_ready_gn_correction/*.csv.gz | awk 'NR==1 || !/^scenario_id,/' > dab_soop_tdoa_ai_ready_gn_correction.csv
+zcat dab_soop_tdoa_ctekf/*.csv.gz | awk 'NR==1 || !/^scenario_id,/' > dab_soop_tdoa_ctekf.csv
+```
+
+A platform-independent Python version and the integrity check are given
+in [`dataset_results/README.md`](dataset_results/README.md).
+
 ## Quick start
 
 **1. Generate the dataset (MATLAB)**
@@ -117,6 +159,14 @@ Outputs in `results/dab_soop_tdoa_dataset_<timestamp>/`:
 cd python
 python run_ai_pipeline.py          # uses the newest dataset in ../results
 python make_paper_figures.py
+```
+
+To use the included dataset instead of generating a new one, reassemble the
+AI-ready CSV (see [Dataset](#dataset)) and run
+
+```bash
+python run_ai_pipeline.py    --data ../dataset_results/dab_soop_tdoa_ai_ready_gn_correction.csv
+python make_paper_figures.py --data ../dataset_results/dab_soop_tdoa_ai_ready_gn_correction.csv
 ```
 
 Use `--data <csv>` to select a specific dataset and `--out <folder>` to
@@ -148,15 +198,17 @@ offsets) are never used as features (`python/dab_tdoa/features.py`).
 
 ## Reference results
 
-Test set of the reference run (1,500 scenarios, 75,000 measurements):
+Scenario-disjoint test set (1,500 scenarios, 75,000 measurements), as
+reported in Table 5 of the paper:
 
 | Method | Mean (m) | Median (m) | RMSE (m) | P95 (m) |
 |---|---|---|---|---|
-| GN | 16.39 | 14.95 | 19.04 | 32.93 |
-| CT-EKF | 15.59 | 14.18 | 18.15 | 31.55 |
+| GN (temporally seeded) | 16.39 | 14.95 | 19.04 | 32.93 |
+| LC-CT-EKF | 15.59 | 14.18 | 18.15 | 31.55 |
 | L1 (HistGradientBoosting) | 14.93 | 13.37 | 17.60 | 31.04 |
 | B1 (XGBoost) | 4.91 | 3.42 | 6.91 | 14.22 |
-| B3 (ensemble) | 3.92 | 2.60 | 5.65 | 11.76 |
+| B2 (uniform covariance) | 4.78 | 3.41 | 6.55 | 13.56 |
+| B3 (ensemble) | 3.95 | 2.65 | 5.68 | 11.83 |
 
 ## Simulation model and notes
 
@@ -189,9 +241,8 @@ service was decoded by a commercial DAB radio and a car head unit
 |---|---|
 | ![SDR transmitter](media/sdr_transmitter_setup.jpeg) | ![Car head unit](media/car_head_unit_reception.jpeg) |
 
-`media/dab_radio_reception.jpeg`, `media/car_head_unit_reception_2.jpeg`
-and `media/over_the_air_test_car.mov` show the reception on a DAB radio, a
-second view of the car head unit and a short recording of the test.
+`media/dab_radio_reception.jpeg` and `media/over_the_air_test_car.mov` show
+the reception on a DAB radio and a short recording of the test.
 
 ## Citation
 
