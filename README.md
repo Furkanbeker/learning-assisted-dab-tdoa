@@ -109,7 +109,7 @@ with Git LFS:
 
 ```bash
 git lfs install
-git clone https://github.com/Furkanbeker/Learning-Assisted-Receiver-Centric-TDOA-Localization-Using-DAB-Signals-of-Opportunity.git
+git clone https://github.com/Furkanbeker/learning-assisted-dab-tdoa.git
 ```
 
 If `basic.cf32` is only a small text pointer after cloning, run `git lfs pull`.
