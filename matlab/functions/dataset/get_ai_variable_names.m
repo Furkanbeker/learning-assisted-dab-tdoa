@@ -1,9 +1,8 @@
 function varNames = get_ai_variable_names()
     % GET_AI_VARIABLE_NAMES  Columns of the AI-ready table.
     %
-    % The AI-ready table keeps model inputs, learning targets and the
-    % columns needed for evaluation (true positions and errors). Which
-    % columns are used as model inputs is decided by the training code.
+    % Candidate inputs, targets and evaluation columns (true positions and
+    % errors). Input selection is done in the Python code.
 
     varNames = { ...
         'scenario_id','meas_idx','motion_type','motion_code', ...

@@ -1,9 +1,9 @@
 function dabInfo = extract_dab_timing_reference(masterIQ, fs)
-    % Locate the DAB Mode-I Null symbol and PRS in the master waveform.
-    % It searches for Null-symbol candidates using expected DAB Mode-I
-    % timing, validates frame spacing, avoids pure file-start padding when
-    % possible, and extracts the following PRS/useful OFDM symbol as the
-    % timing template.
+    % EXTRACT_DAB_TIMING_REFERENCE  Locate the Mode-I Null symbol and PRS in
+    % the master waveform.
+    %
+    % Null candidates are validated by frame spacing; the useful part of the
+    % following PRS is returned as the matched-filter template.
 
     x = masterIQ(:);
     p = abs(x).^2;

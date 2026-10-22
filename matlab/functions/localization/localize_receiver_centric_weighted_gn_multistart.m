@@ -1,14 +1,10 @@
 function [xHat, info] = localize_receiver_centric_weighted_gn_multistart( ...
     txPos, refPos, deltaTau_s, c, x0, weights, validMask, areaMin, areaMax)
-    % Multi-start weighted robust GN solver for receiver-centric TDOA.
-    % Why this is needed:
-    % - With random TX placement and long line-like UAV trajectories, a single
-    %   centroid-based initial point can converge to a wrong hyperbolic branch.
-    % - The wrong branch may lie far outside the operating field and cause
-    %   GN outliers of several kilometers.
-    % - Multi-start selection uses only observable information: estimated TDOA,
-    %   PRS weights, field limits, TX/REF geometry, and residuals. It does NOT
-    %   use true UAV position, true error, motion type, or labels.
+    % LOCALIZE_RECEIVER_CENTRIC_WEIGHTED_GN_MULTISTART  Multi-start weighted GN
+    % for receiver-centric TDOA.
+    %
+    % A single start can converge to a wrong hyperbolic branch far outside
+    % the field. The best start is chosen from residuals and field limits.
 
     areaSpan = areaMax - areaMin;
     fieldCenter = [areaMin + 0.5*areaSpan, areaMin + 0.5*areaSpan];
@@ -19,8 +15,7 @@ function [xHat, info] = localize_receiver_centric_weighted_gn_multistart( ...
     startList = add_start_candidate(startList, fieldCenter);
     startList = add_start_candidate(startList, refPos(:).');
 
-    % Local starts around the current prediction / previous EKF output.
-    % This improves temporal branch consistency without using true position.
+    % Local starts around x0 (previous CT-EKF output).
     localStep = 0.08 * areaSpan;
     x0Local = x0(:).';
     localOffsets = [ ...
@@ -33,8 +28,7 @@ function [xHat, info] = localize_receiver_centric_weighted_gn_multistart( ...
         startList = add_start_candidate(startList, pLocal);
     end
 
-    % Coarse field starts. These are cheap compared with PRS processing and
-    % strongly reduce wrong-branch convergence for line trajectories.
+    % Coarse 5 x 5 grid over the field.
     g = linspace(areaMin + 0.12*areaSpan, areaMax - 0.12*areaSpan, 5);
     for ix = 1:numel(g)
         for iy = 1:numel(g)
@@ -42,8 +36,7 @@ function [xHat, info] = localize_receiver_centric_weighted_gn_multistart( ...
         end
     end
 
-    % Add TX-neighborhood and centroid-to-ref midpoint starts. They help when the
-    % UAV is close to one side of the TX hull.
+    % Starts near each TX and between the TX centroid and REF.
     for k = 1:size(txPos,1)
         startList = add_start_candidate(startList, 0.70*txPos(k,:) + 0.30*fieldCenter);
     end
@@ -85,10 +78,8 @@ function [xHat, info] = localize_receiver_centric_weighted_gn_multistart( ...
         end
     end
 
-    % Hard operating-field constraint:
-    % The UAV is simulated/operated inside [areaMin, areaMax]^2, so an
-    % outside-field GN result is treated as a wrong hyperbolic branch. This uses
-    % only known field limits, not true UAV position.
+    % Prefer candidates inside [areaMin, areaMax]^2; outside-field results
+    % are treated as wrong branches.
     outsideVals = reshape([candidates.outsideDist], [], 1);
     scoreVals = reshape([candidates.score], [], 1);
     insideIdx = find(isfinite(scoreVals) & outsideVals <= 1e-6);
@@ -114,7 +105,7 @@ function [xHat, info] = localize_receiver_centric_weighted_gn_multistart( ...
     info.outside_field_dist_m = candidates(bestIdx).outsideDist;
     info.best_start = candidates(bestIdx).start;
 
-    % Store compact candidate diagnostics without creating nested tables.
+    % Per-candidate diagnostics.
     info.candidate_scores = reshape([candidates.score], [], 1);
     info.candidate_raw_rms_ns = reshape([candidates.rawRmsNs], [], 1);
     info.candidate_outside_dist_m = reshape([candidates.outsideDist], [], 1);
@@ -183,8 +174,7 @@ function [score, rawRmsNs, weightedRmsNs, outsideDist] = score_gn_candidate( ...
     dyHigh = max(xHat(2) - areaMax, 0);
     outsideDist = hypot(dxLow + dxHigh, dyLow + dyHigh);
 
-    % Residual dominates the score. Field penalty only breaks ties and rejects
-    % physically impossible outside-field branches when residuals are similar.
+    % Residual dominates; the field penalty separates outside-field branches.
     fieldPenaltyNs = 250.0 * outsideDist;
     score = rawRmsNs + 0.10 * weightedRmsNs + fieldPenaltyNs;
 end

@@ -1,15 +1,12 @@
 function [txPos, refPos, uavPath, centerPos, scaleValue, startDeg, clockwise, motionType] = ...
     generate_random_geometry_and_uav_motion(numTx, areaMin, areaMax, minRefToTx, numPts, scenarioIdx)
-    % Generate a random TX/REF layout and a UAV trajectory that pass the
-    % geometry quality gates below. Motion types are assigned round-robin
-    % over the scenario index, so every type gets the same number of
-    % scenarios.
+    % GENERATE_RANDOM_GEOMETRY_AND_UAV_MOTION  Random TX/REF layout and UAV
+    % trajectory that pass the geometry gates below.
+    %
+    % Motion types are assigned round-robin over the scenario index.
 
     assert(numTx == 4, 'Random dataset geometry expects exactly 4 transmitters.');
 
-    % Motion types used in the dataset. The path generator also supports
-    % "am_sine" (sine with a contracting/expanding amplitude envelope); add
-    % it to this list to enable it.
     motionList = ["circle", "line", "sine", "sine2"];
 
     motionType = motionList(mod(scenarioIdx-1, numel(motionList)) + 1);
@@ -18,11 +15,8 @@ function [txPos, refPos, uavPath, centerPos, scaleValue, startDeg, clockwise, mo
     fieldMargin = max(80, 0.02 * areaSpan);
 
     %% Random TX/REF/path placement with quality gates
-    % TX positions are drawn uniformly over the field (minus a margin).
-    % The following gates only remove degenerate cases such as nearly collinear
-    % TX layouts, extremely poor TDOA conditioning, or paths that sit in a
-    % geometry where GN is expected to be numerically unstable.
-    % No true localization error is used here.
+    % TX positions are uniform over the field minus a margin. The gates
+    % reject degenerate layouts (near-collinear TX, poor conditioning).
 
     minTxSeparation = max(450, 0.09 * areaSpan);
     minHullArea = 0.07 * areaSpan^2;
@@ -130,9 +124,8 @@ function [txPos, refPos, uavPath, centerPos, scaleValue, startDeg, clockwise, mo
     end
 
     if isempty(txPos)
-        % Fallback: still random, but only the TX spacing and hull-area
-        % gates are applied. This guarantees termination for very unlucky
-        % random draws without resorting to a fixed TX layout.
+        % Fallback: random layout with only the spacing and hull-area gates,
+        % and a straight line path.
         for attempt = 1:maxTry
             candTx = areaMin + fieldMargin + ...
                 (areaSpan - 2*fieldMargin) * rand(numTx, 2);

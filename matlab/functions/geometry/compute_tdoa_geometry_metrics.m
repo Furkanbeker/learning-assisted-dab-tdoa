@@ -1,8 +1,9 @@
 function gdopInfo = compute_tdoa_geometry_metrics(txPos, refPos, uavPos)
-    % GDOP-like metric and condition number of the receiver-centric TDOA
-    % geometry at uavPos. With a known REF position, the Jacobian with
-    % respect to the UAV position depends only on the TX-to-UAV unit
-    % vectors, so refPos is not used in the computation.
+    % COMPUTE_TDOA_GEOMETRY_METRICS  GDOP-like metric and condition number
+    % at uavPos.
+    %
+    % With REF known, the Jacobian depends only on the TX-to-UAV unit
+    % vectors, so refPos is unused.
 
     numTx = size(txPos,1);
     H = zeros(numTx,2);

@@ -2,19 +2,8 @@ function [tracker, ekfPos, ekfToGnDist, ekfWasReset] = update_adaptive_ctekf( ..
     tracker, imeas, xHat, gnInfo, validTdoa, tdoaWeights, toaConfVals, ...
     geometry_score_est, gdopEstInfo, txGeomInfo, refPos, areaMin, areaMax, measDt)
     % UPDATE_ADAPTIVE_CTEKF  One maneuver-adaptive CT-EKF step on a GN fix.
-    %
-    % Leakage-free: the update uses only the GN history, the estimated
-    % geometry and the observable PRS quality. It does not use the true UAV
-    % position, motion type, velocity or any label.
-    %
-    % Steps
-    %   1) Check whether the GN fix is reliable. Unreliable fixes are not
-    %      used; the filter then only predicts.
-    %   2) Initialize the state at the first step and speed/heading at the
-    %      second step; otherwise run a CT-EKF predict/update step.
-    %   3) Soft reset toward GN if the filter drifts too far from a
-    %      reliable GN fix.
-    %   4) Report an adaptive blend of the CT-EKF and GN positions.
+    % Unreliable GN fixes are skipped (predict only). Uses observable
+    % quantities only.
     %
     % Inputs
     %   tracker  struct with fields state ([px; py; v; psi; omega]), P,
@@ -97,9 +86,7 @@ function [tracker, ekfPos, ekfToGnDist, ekfWasReset] = update_adaptive_ctekf( ..
         end
     end
 
-    % Soft reset: if the CT-EKF drifts too far from a reliable GN fix,
-    % pull the position toward GN, re-initialize speed/heading from the
-    % last two GN fixes and inflate the position covariance.
+    % Soft reset when the CT-EKF drifts too far from a reliable GN fix.
     ekfToGnDist = norm(ekfState(1:2).' - xHat);
     ekfWasReset = false;
 
@@ -156,9 +143,7 @@ function [tracker, ekfPos, ekfToGnDist, ekfWasReset] = update_adaptive_ctekf( ..
         ekfPos = ekfRawPos;
     end
 
-    % State feedback: the next prediction starts from the reported
-    % (blended) estimate. This keeps the smoothing consistent and does
-    % not use the true position.
+    % The next prediction starts from the blended estimate.
     if gnReliable
         ekfState(1:2) = ekfPos(:);
     end

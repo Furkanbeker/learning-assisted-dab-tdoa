@@ -1,16 +1,9 @@
 function [x, P] = ct_ekf_step(x, P, z, dt, geometry_score, gdop_like, condition_number, measurementQuality, maneuverScore)
-    % One CT-EKF predict/update step with a GN position measurement.
+    % CT_EKF_STEP  One CT-EKF predict/update step with a GN position fix.
+    %
+    % State x = [px; py; v; psi; omega] (m, m, m/s, rad, rad/s).
     % Q grows with the maneuver score; R grows with poor geometry and low
-    % PRS quality, and is inflated when the innovation fails a chi-square
-    % gate.
-    %
-    % CT-EKF state:
-    % x = [px; py; v; psi; omega]
-    %
-    % px, py : position
-    % v      : speed
-    % psi    : heading angle
-    % omega  : turn rate
+    % PRS quality and is inflated when the chi-square gate fails.
 
     maneuverScore = clip01(maneuverScore);
 
@@ -38,9 +31,7 @@ function [x, P] = ct_ekf_step(x, P, z, dt, geometry_score, gdop_like, condition_
     Rscale = geomFactor * gdopFactor * condFactor * qualityFactor;
     Rscale = min(max(Rscale, 1), 20);
 
-    % If the GN sequence indicates a real maneuver and the PRS quality is not
-    % poor, do not over-reject GN by making R extremely large. This prevents
-    % sine/sine2 trajectories from being over-smoothed by a constant-turn model.
+    % Cap R during maneuvers with good PRS quality to avoid over-smoothing.
     if maneuverScore > 0.25 && measurementQuality > 0.50
         Rscale = min(Rscale, 3.5);
     end
@@ -63,8 +54,7 @@ function [x, P] = ct_ekf_step(x, P, z, dt, geometry_score, gdop_like, condition_
 
     gateValue = innov.' / S * innov;
 
-    % 95% chi-square threshold for 2D measurement is about 5.99.
-    % 99% threshold is about 9.21.
+    % Chi-square, 2 DOF: 9.21 is the 99% threshold.
     if maneuverScore > 0.35 && measurementQuality > 0.50
         gateThreshold = 16.0;
     else
@@ -86,7 +76,7 @@ function [x, P] = ct_ekf_step(x, P, z, dt, geometry_score, gdop_like, condition_
 
     x = xPred + K * innov;
 
-    % Physical safety limits for UAV motion model
+    % Physical limits of the motion model.
     x(3) = max(0, min(150, x(3)));       % speed limit: 0 to 150 m/s
     x(5) = max(-0.8, min(0.8, x(5)));    % turn-rate limit: -0.8 to 0.8 rad/s
 

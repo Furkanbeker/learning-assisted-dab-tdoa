@@ -1,8 +1,9 @@
 function [lagHat, peakVal, peakToMedian, peakToSecond] = estimate_template_matched_search_centered(sig, template, centerLag, halfLag)
-    % Normalized matched-filter search of the template in
-    % [centerLag - halfLag, centerLag + halfLag] with parabolic sub-sample
-    % refinement of the peak. Also returns the peak-to-median and
-    % peak-to-second-peak ratios used as quality metrics.
+    % ESTIMATE_TEMPLATE_MATCHED_SEARCH_CENTERED  Normalized matched-filter
+    % search in [centerLag - halfLag, centerLag + halfLag].
+    %
+    % Parabolic sub-sample peak refinement. Also returns peak-to-median and
+    % peak-to-second-peak ratios.
 
     sig = sig(:);
     template = template(:);
@@ -20,10 +21,7 @@ function [lagHat, peakVal, peakToMedian, peakToSecond] = estimate_template_match
     tpl = template - mean(template);
     tplNorm = norm(tpl) + eps;
 
-    % Vectorized centered matched search:
-    % Instead of computing one dot product per lag in a for-loop, only the
-    % required local search interval is extracted and all lag metrics are
-    % computed at once using convolution-style sliding operations.
+    % Vectorized over all lags in the search interval.
     searchSig = sig(lagMin + 1 : lagMax + L);
 
     numerator = conv(searchSig, flipud(conj(tpl)), 'valid');

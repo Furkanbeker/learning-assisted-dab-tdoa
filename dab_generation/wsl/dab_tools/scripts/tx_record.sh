@@ -2,15 +2,15 @@
 # =============================================================================
 # tx_record.sh  ("Record" mode of the GUI)
 #
-# Offline generation of a DAB Mode-I baseband IQ file from an audio file.
-# No SDR is needed. This is how data/dab_iq/basic.cf32 of the repository
-# was produced (audio/basic.wav, label "MediComm-DAB", 120 kbps).
+# Offline DAB Mode-I baseband IQ file from an audio file (no SDR needed).
+# data/dab_iq/basic.cf32 was made this way (audio/basic.wav, label
+# "MediComm-DAB", 120 kbps).
 #
 #   audio --ffmpeg--> 48 kHz stereo WAV --odr-audioenc--> .dabp
 #         --odr-dabmux--> .eti --odr-dabmod--> complex float32 IQ (.cf32)
 #
-# The IQ file is cut to (audio duration + 0.8 s) and a JSON metadata file
-# with the same name is written next to it.
+# The IQ is cut to audio duration + 0.8 s; a JSON metadata file with the
+# same name is written next to it.
 #
 # Usage:
 #   bash tx_record.sh <audio_path> <label> <bitrate> <sr> <ch> <freq_hz> <iq_output>
@@ -18,11 +18,9 @@
 # Example (inside WSL, from wsl/dab_tools):
 #   bash scripts/tx_record.sh ../../audio/basic.wav MediComm-DAB 120 48000 2 195936000 ./basic.cf32
 #
-# Note: freq_hz is only stored in the metadata (the IQ file is baseband).
-# The ensemble carries the local time, so a regenerated file is equivalent
-# but not byte-identical to the one in the repository.
-#
-# Intermediate files are written to offline_record/ and eti/.
+# freq_hz is only stored in the metadata (the IQ is baseband). The ensemble
+# carries the local time, so a regenerated file is not byte-identical.
+# Intermediate files go to offline_record/ and eti/.
 # =============================================================================
 set -euo pipefail
 
@@ -152,7 +150,7 @@ outputs {
 }
 EOF2
 
-# 4) Run the multiplexer for a limited time (it would run forever otherwise)
+# 4) Run the multiplexer for a limited time (it does not stop by itself)
 echo "[MUX] Generating ETI (duration-limited)..."
 rm -f "$ETI_FILE"
 timeout 4s odr-dabmux "$MUX_FILE" || true

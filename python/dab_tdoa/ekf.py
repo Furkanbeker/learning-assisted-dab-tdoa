@@ -1,9 +1,10 @@
 """
-Tightly coupled TDOA CT-EKF used in Level 3.
+Tightly coupled TDOA CT-EKF used by B2 and B3.
 
-State x = [px, py, v, psi, omega] (constant-turn model). The measurement
-vector is the four corrected receiver-centric TDOAs; the per-channel
-measurement noise is scaled by the R-scale predicted by the B3 model.
+State x = [px, py, v, psi, omega] (coordinated-turn model). The measurement
+vector is the four B1-corrected receiver-centric TDOAs. The per-channel
+measurement noise is base_sigma^2 * r_mult * r_scale, with r_scale = 1 for
+B2 and the predicted R-scale for B3.
 """
 
 import numpy as np
@@ -93,13 +94,13 @@ def tight_tdoa_ctekf_scenario(df_sc, corr_delta_cols,
         innov = z[i] - h
         S = H @ P @ H.T + R
 
-        # Chi-square gating
+        # NIS gating: inflate R for outlying innovations
         try:
             gate = float(innov @ np.linalg.solve(S, innov))
         except Exception:
             gate = 0.0
-        if gate > 9.21:
-            R = R * min(50., gate / 9.21)
+        if gate > cfg.B3_NIS_THRESHOLD:
+            R = R * min(50., gate / cfg.B3_NIS_THRESHOLD)
             S = H @ P @ H.T + R
 
         K = P @ H.T @ np.linalg.pinv(S)

@@ -1,9 +1,8 @@
 function iq = load_cf32_iq(iqFile)
     % LOAD_CF32_IQ  Read an interleaved complex float32 (.cf32) IQ file.
     %
-    % The file stores I and Q samples as alternating little-endian float32
-    % values (I0, Q0, I1, Q1, ...). The output is a complex column vector
-    % of class single.
+    % Little-endian float32 I0, Q0, I1, Q1, ... Returns a complex single
+    % column vector.
 
     if ~isfile(iqFile)
         error(['IQ file not found: %s\n' ...

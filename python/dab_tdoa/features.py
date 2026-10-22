@@ -246,13 +246,13 @@ _RAW_SAFE = [
     "peak_to_second_ref_ch3","peak_to_second_ref_ch4",
     "peak_to_second_uav_ch1","peak_to_second_uav_ch2",
     "peak_to_second_uav_ch3","peak_to_second_uav_ch4",
-    # SNR
+    # SNR proxies (simulation-derived, see the paper)
     "snr_ref_ch1","snr_ref_ch2","snr_ref_ch3","snr_ref_ch4",
     "snr_uav_ch1","snr_uav_ch2","snr_uav_ch3","snr_uav_ch4",
     "mean_snr_uav","min_snr_uav",
     "mean_peak_uav","min_peak_uav",
     "mean_toa_conf_uav","min_toa_conf_uav",
-    # Observation quality (from SNR / peak / confidence, observable)
+    # Observation quality score (partly simulation-derived)
     "observation_quality_score",
     # Geometry at the GN estimate (no leakage)
     "gdop_like_est","condition_number_est","geometry_score_est",
@@ -323,9 +323,9 @@ def select_features(df: pd.DataFrame) -> list:
     return safe
 
 
-# Level 1 target: GN position error (x, y)
+# L1 target: GN position error (x, y)
 TARGET_L1 = ["gn_err_x", "gn_err_y"]
 
-# Level 2 (B1) target: per-channel TDOA error
+# B1 target: per-link TDOA error (s)
 TARGET_B1 = ["delta_err_ch1", "delta_err_ch2",
              "delta_err_ch3", "delta_err_ch4"]

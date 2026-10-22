@@ -1,8 +1,7 @@
 function [trainSc, valSc, testSc, splitLabel] = split_scenarios(scenarioIds, splitSeed)
     % SPLIT_SCENARIOS  Scenario-wise 70 / 15 / 15 train / val / test split.
     %
-    % All measurements of one scenario end up in the same subset, so no
-    % trajectory is shared between training and evaluation.
+    % All measurements of a scenario go to the same subset.
     %
     % Inputs
     %   scenarioIds  scenario ID of every dataset row (column vector)

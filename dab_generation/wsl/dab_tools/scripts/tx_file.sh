@@ -9,9 +9,8 @@
 # Usage:
 #   ./tx_file.sh AUDIO [LABEL] [BITRATE] [SR] [CH] URI FREQ_HZ GAIN_DB [LOOP] [DURATION_S]
 #
-#   DURATION_S = -1 reads the track duration with ffprobe (GUI option
-#   "Track duration"). LOOP and DURATION_S are passed on to
-#   run_dabmod_tx.sh, which currently transmits until it is stopped.
+#   DURATION_S = -1 uses the track duration (ffprobe). LOOP and DURATION_S
+#   are passed to run_dabmod_tx.sh, which ignores them.
 # =============================================================================
 set -euo pipefail
 

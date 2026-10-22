@@ -1,9 +1,8 @@
 function [tauHat_s, delayLagHat, peakVal, quality] = estimate_toa_dab_prs_multiframe(sig, prsTemplate, fs, prsSearchCenters, searchHalfLag)
-    % Robust multi-frame DAB PRS-based TOA estimator.
-    % The function searches the same PRS template in several expected DAB
-    % frame locations, computes peak quality metrics for each frame, rejects
-    % inconsistent frame detections, and returns a confidence-weighted median
-    % delay estimate.
+    % ESTIMATE_TOA_DAB_PRS_MULTIFRAME  PRS-based TOA over up to 5 DAB frames.
+    %
+    % Matches the PRS template around each expected frame position, rejects
+    % outlier frames (MAD test) and returns the quality-weighted median delay.
 
     sig = sig(:);
     prsTemplate = prsTemplate(:);
@@ -72,12 +71,11 @@ function [tauHat_s, delayLagHat, peakVal, quality] = estimate_toa_dab_prs_multif
     medDelay = median(keptDelays);
     madDelay = median(abs(keptDelays - medDelay)) + eps;
 
-    % Minimum tolerance of 2 samples protects against over-rejecting when all
-    % frames agree very closely. The MAD term handles noisier cases.
+    % Inlier tolerance: 3 x MAD, at least 2 samples.
     inlier = abs(keptDelays - medDelay) <= max(3*madDelay, 2.0);
 
     if nnz(inlier) < 2 && numel(keptDelays) >= 2
-        % If the MAD test is too aggressive, keep the two best detections.
+        % Keep at least the two best detections.
         inlier = false(size(keptDelays));
         inlier(1:min(2,numel(keptDelays))) = true;
     end

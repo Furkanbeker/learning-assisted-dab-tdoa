@@ -1,21 +1,19 @@
 """
 DAB TX GUI - entry point (run on Windows).
 
-Starts the PySide6 GUI that controls the DAB transmit chain running in
-WSL:
+PySide6 GUI for the DAB transmit chain running in WSL:
 
     audio -> ODR-AudioEnc -> ODR-DabMux (ETI) -> ODR-DabMod -> ADALM-PLUTO
                                                      |
                                                      +-> IQ file (.cf32)
 
-The GUI only builds and starts the WSL scripts in wsl/dab_tools/scripts/
-(see tx_manager.py); all signal processing is done by the ODR tools.
+The GUI only starts the scripts in wsl/dab_tools/scripts/ (tx_manager.py);
+all signal processing is done by the ODR tools.
 
 Usage:
     python main.py            (or run_gui.bat / run_gui.ps1)
 
-The WSL path of wsl/dab_tools is derived from the location of this file.
-Set the environment variable DAB_WSL_DIR to use another folder.
+Set DAB_WSL_DIR to override the WSL path of wsl/dab_tools.
 """
 
 import os

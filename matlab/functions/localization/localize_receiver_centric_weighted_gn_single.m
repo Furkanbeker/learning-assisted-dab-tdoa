@@ -1,8 +1,7 @@
 function [xHat, info] = localize_receiver_centric_weighted_gn_single( ...
     txPos, refPos, deltaTau_s, c, x0, weights, validMask)
-    % Single-start weighted robust Gauss-Newton solver for receiver-centric TDOA.
-    % This helper is intentionally kept local and is called by the multi-start
-    % wrapper above.
+    % LOCALIZE_RECEIVER_CENTRIC_WEIGHTED_GN_SINGLE  Single-start weighted GN
+    % for receiver-centric TDOA (called by the multi-start wrapper).
 
     deltaTau_s = deltaTau_s(:);
     weights = weights(:);
@@ -100,8 +99,7 @@ function [xHat, info] = localize_receiver_centric_weighted_gn_single( ...
             dx = dx * (maxStep / stepNorm);
         end
 
-        % Simple damping: if a full step increases the raw residual too much,
-        % reduce the step. This prevents rare runaway behavior from a poor start.
+        % Halve the step while the raw residual grows by more than 15 %.
         rawRmsBefore = sqrt(mean(r.^2));
         xTrial = x + dx;
         rawRmsAfter = compute_raw_tdoa_rms(txPos, refPos, deltaTau_s, c, xTrial, activeIdx);

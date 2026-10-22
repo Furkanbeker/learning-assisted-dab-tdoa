@@ -1,9 +1,7 @@
 function links = simulate_link_measurements(txPos, rxPosAll, txTimingOffset_s, noisePower, cfg)
     % SIMULATE_LINK_MEASUREMENTS  Simulate all TX-RX links for one time step.
     %
-    % For every transmitter k and receiver irx, the master DAB waveform is
-    % delayed by the geometric delay plus the TX timing offset, attenuated
-    % by FSPL and corrupted by AWGN. The TOA is then estimated from the PRS.
+    % Each link: geometric delay + TX offset, FSPL, AWGN, then PRS-based TOA.
     %
     % Inputs
     %   txPos            numTx x 2 TX positions (m)

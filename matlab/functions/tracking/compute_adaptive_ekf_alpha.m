@@ -1,6 +1,7 @@
 function alphaEKF = compute_adaptive_ekf_alpha(maneuverScore, measurementQuality, geometryScore, ekfToGnDist)
-    % Blending weight between the CT-EKF and GN positions:
-    % reported position = alphaEKF * EKF + (1 - alphaEKF) * GN.
+    % COMPUTE_ADAPTIVE_EKF_ALPHA  Blending weight between CT-EKF and GN.
+    %
+    % Reported position = alphaEKF * EKF + (1 - alphaEKF) * GN.
 
     maneuverScore = clip01(maneuverScore);
     measurementQuality = clip01(measurementQuality);
@@ -10,24 +11,20 @@ function alphaEKF = compute_adaptive_ekf_alpha(maneuverScore, measurementQuality
     qualityBonus = clip01((measurementQuality - 0.55) / 0.45);
     geometryBonus = clip01((geometryScore - 0.45) / 0.55);
 
-    % alphaEKF close to 1 means mostly EKF; close to 0 means mostly GN.
-    % The blend becomes GN-heavy whenever the GN-only track shows
-    % maneuvering or the EKF prediction drifts away from GN, so that the
-    % filter does not lag behind real curvature (e.g., sine2).
+    % Lean toward GN during maneuvers or when the EKF drifts from GN,
+    % so the filter does not lag behind curved paths.
     alphaEKF = 0.90 ...
         - 0.42 * maneuverScore ...
         - 0.28 * distPenalty ...
         + 0.05 * qualityBonus ...
         + 0.04 * geometryBonus;
 
-    % Low-maneuver case: preserve smoothing for line/circle when EKF and GN are
-    % already consistent. This keeps the good cases from being weakened.
+    % Low maneuver and EKF consistent with GN: keep smoothing.
     if maneuverScore < 0.15 && ekfToGnDist < 14 && measurementQuality > 0.45
         alphaEKF = max(alphaEKF, 0.88);
     end
 
-    % Maneuver case: allow GN to dominate so CT-EKF does not lag through fast
-    % direction/amplitude changes.
+    % Maneuver with good PRS quality: let GN dominate.
     if maneuverScore > 0.30 && measurementQuality > 0.50
         alphaEKF = min(alphaEKF, 0.62);
     end
@@ -36,8 +33,7 @@ function alphaEKF = compute_adaptive_ekf_alpha(maneuverScore, measurementQuality
         alphaEKF = min(alphaEKF, 0.48);
     end
 
-    % If EKF and GN disagree strongly while the PRS quality is high, this is
-    % usually model lag rather than a GN failure after the multi-start solver.
+    % Large EKF-GN gap with high PRS quality is usually model lag.
     if ekfToGnDist > 28 && measurementQuality > 0.60
         alphaEKF = min(alphaEKF, 0.45);
     end

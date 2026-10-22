@@ -1,7 +1,6 @@
 function maneuverScore = compute_gn_maneuver_score(prevPrevGnPos, prevGnPos, zGN, dt, measurementQuality)
-    % Leakage-free maneuver indicator in [0, 1], computed only from the last
-    % three GN fixes. The thresholds are chosen so that curved trajectories
-    % (e.g., sine2) are not over-smoothed by the CT-EKF.
+    % COMPUTE_GN_MANEUVER_SCORE  Maneuver indicator in [0, 1] from the last
+    % three GN fixes.
 
     if isempty(prevPrevGnPos) || isempty(prevGnPos)
         maneuverScore = 0;
@@ -37,8 +36,7 @@ function maneuverScore = compute_gn_maneuver_score(prevPrevGnPos, prevGnPos, zGN
 
     maneuverScore = 0.50 * accScore + 0.35 * turnScore + 0.15 * speedScore;
 
-    % Do not trust apparent maneuvers when PRS/GN quality is poor; those are
-    % more likely measurement noise than real motion curvature.
+    % With poor PRS quality, apparent maneuvers are mostly noise.
     qualityGate = clip01((measurementQuality - 0.25) / 0.45);
     maneuverScore = maneuverScore * qualityGate;
 

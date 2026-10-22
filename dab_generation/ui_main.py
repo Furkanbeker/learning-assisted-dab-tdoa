@@ -33,11 +33,11 @@ class TxCard(QGroupBox):
         self.status_label = QLabel("Status: STOPPED")
         self.status_label.setStyleSheet("font-weight: 800; color: #ef4444;")
 
-        # --- MANUAL URI (editable) ---
+        # Pluto URI (editable)
         self.uri_edit = QLineEdit("ip:192.168.2.1")
         self.uri_edit.setPlaceholderText("e.g. ip:192.168.2.1")
 
-        # freq presets
+        # Frequency presets
         self.freq_combo = QComboBox()
         for k in PRESETS_HZ.keys():
             self.freq_combo.addItem(k)
@@ -46,13 +46,13 @@ class TxCard(QGroupBox):
         if idx_8a >= 0:
             self.freq_combo.setCurrentIndex(idx_8a)
 
-        # gain
+        # TX gain
         self.gain_spin = QDoubleSpinBox()
         self.gain_spin.setRange(-10.0, 80.0)
         self.gain_spin.setValue(40.0)
         self.gain_spin.setSuffix(" dB")
 
-        # mode
+        # Mode
         self.rb_random = QRadioButton("Random")
         self.rb_file = QRadioButton("File")
         self.rb_record = QRadioButton("Record")
@@ -63,24 +63,24 @@ class TxCard(QGroupBox):
         self.mode_group.addButton(self.rb_file)
         self.mode_group.addButton(self.rb_record)
 
-        # file widgets
+        # Audio file
         self.file_label = QLabel("File: (none)")
         self.btn_browse = QPushButton("Browse")
 
-        # iq output widgets (record mode)
+        # IQ output (record mode)
         self.iq_label = QLabel("IQ Output: (none)")
         self.btn_iq_save = QPushButton("Save As...")
 
-        # label name
+        # Service label
         self.label_edit = QLineEdit("MediComm-DAB")
 
-        # bitrate
+        # Bitrate
         self.bitrate_spin = QSpinBox()
         self.bitrate_spin.setRange(32, 256)
         self.bitrate_spin.setValue(120)
         self.bitrate_spin.setSuffix(" kbps")
 
-        # duration + loop + track-duration
+        # Duration, loop, track duration
         self.duration_spin = QSpinBox()
         self.duration_spin.setRange(0, 24 * 3600)
         self.duration_spin.setValue(15)
@@ -94,7 +94,7 @@ class TxCard(QGroupBox):
         self.track_chk.setChecked(False)
         self.track_chk.setToolTip("File mode only: transmit for the track length (ffprobe).")
 
-        # buttons
+        # Buttons
         self.btn_start = QPushButton("Start")
         self.btn_stop = QPushButton("Stop")
         self.btn_restart = QPushButton("Restart")
@@ -167,7 +167,7 @@ class TxCard(QGroupBox):
 
         self.setLayout(grid)
 
-        # signals
+        # Signals
         self.rb_random.toggled.connect(self._on_mode_change)
         self.rb_file.toggled.connect(self._on_mode_change)
         self.rb_record.toggled.connect(self._on_mode_change)
@@ -187,10 +187,10 @@ class TxCard(QGroupBox):
         self.file_row.setVisible(is_file_like)
         self.iq_row.setVisible(is_record)
 
-        # Pluto not required in record mode
+        # No Pluto needed in record mode
         self.uri_edit.setEnabled(not is_record)
 
-        # Record mode is offline file generation, so keep these disabled
+        # Record mode is offline: no loop or duration
         self.loop_chk.setEnabled(not is_record)
         self.track_chk.setEnabled(not is_record)
         self.duration_spin.setEnabled(not is_record)
@@ -293,11 +293,8 @@ class TxCard(QGroupBox):
         if iq_txt.startswith("IQ Output: "):
             iq_output_path = iq_txt.replace("IQ Output: ", "").strip()
 
-        # duration logic:
-        # - record: offline full-file processing
-        # - loop: duration=0, loop=1
-        # - track duration: duration=-1, loop=0
-        # - manual: duration=spin, loop=0
+        # record: duration=-1 | loop: duration=0, loop=1
+        # track duration: duration=-1, loop=0 | manual: duration=spin, loop=0
         if mode == "record":
             loop = 0
             duration_s = -1

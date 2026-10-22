@@ -1,8 +1,6 @@
 """
-Weighted robust Gauss-Newton solver for receiver-centric TDOA (Python
-version of the MATLAB GN solver, used to re-solve the position from the
-corrected TDOAs in Level 2 / Level 3). REF is at the origin and all
-positions are relative to REF.
+Weighted robust Gauss-Newton solver for receiver-centric TDOA, used to
+re-solve the position from the B1-corrected TDOAs. REF is the origin.
 """
 
 import numpy as np

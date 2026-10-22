@@ -1,7 +1,7 @@
 function [xPred, F] = ct_predict_with_jacobian(x, dt)
-    % Constant-turn (CT) motion model prediction and its Jacobian F.
-    % State x = [px; py; v; psi; omega]. A straight-line model is used when
-    % |omega| is close to zero.
+    % CT_PREDICT_WITH_JACOBIAN  Constant-turn prediction and Jacobian F.
+    %
+    % State x = [px; py; v; psi; omega]. Straight-line model for |omega| ~ 0.
 
     px = x(1);
     py = x(2);

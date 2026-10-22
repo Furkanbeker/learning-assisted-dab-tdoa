@@ -1,6 +1,6 @@
 function [x, P] = ct_ekf_predict_only_step(x, P, dt)
-    % CT-EKF prediction without a measurement update (used when the GN fix
-    % is rejected).
+    % CT_EKF_PREDICT_ONLY_STEP  CT-EKF prediction without update (GN fix
+    % rejected).
 
     [xPred, F] = ct_predict_with_jacobian(x, dt);
 
@@ -15,9 +15,8 @@ function [x, P] = ct_ekf_predict_only_step(x, P, dt)
     x = xPred;
     P = F * P * F.' + Q;
 
-    % Controlled covariance inflation during rejected GN frames. This allows
-    % the next reliable GN observation to pull the EKF back without letting one
-    % catastrophic GN estimate destroy the track.
+    % Inflate position covariance so the next reliable fix can pull the
+    % track back.
     P(1:2,1:2) = P(1:2,1:2) + 35^2 * eye(2);
 
     x(3) = max(0, min(150, x(3)));

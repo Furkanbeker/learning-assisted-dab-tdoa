@@ -1,13 +1,11 @@
 function [isReliable, info] = assess_gn_observation_reliability( ...
     xHat, gnInfo, validTdoa, tdoaWeights, measurementQuality, ...
     geometryScoreEst, gdopEstInfo, areaMin, areaMax, refPos, txGeomInfo)
-    % Decide whether a GN fix is reliable enough to update the CT-EKF.
-    % Uses only observable quantities: field limits, number and weights of
-    % valid TDOAs, PRS quality, estimated geometry and GN residuals.
+    % ASSESS_GN_OBSERVATION_RELIABILITY  Decide whether a GN fix may update
+    % the CT-EKF. Uses observable quantities only.
 
     areaSpan = areaMax - areaMin;
-    % Keep this margin tight. A GN point far outside the known operating field
-    % is usually a wrong hyperbolic branch, not a useful measurement.
+    % A fix far outside the field is usually a wrong hyperbolic branch.
     softMargin = 0.04 * areaSpan;
 
     xHat = xHat(:).';

@@ -1,12 +1,9 @@
 """
 TX manager: starts and stops the DAB transmit scripts in WSL.
 
-For each GUI "slot" (currently one, TX-1) the manager builds a bash
-command line for one of the scripts in wsl/dab_tools/scripts/, runs it
-with "wsl bash -lc ..." and forwards every output line to the GUI log.
+Each GUI slot (currently TX-1) runs one script from wsl/dab_tools/scripts/
+via "wsl bash -lc ..." and forwards its output to the GUI log.
 
-Modes
------
 random : transmit the active ETI file (tx_random.sh)
 file   : build an ETI from an audio file and transmit it (tx_file.sh)
 record : offline generation of a baseband IQ file, no SDR (tx_record.sh)

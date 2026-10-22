@@ -1,15 +1,13 @@
 function p = sample_random_point_far_from_tx(txPos, areaMin, areaMax, minDistToTx, margin, maxTry)
-    % Sample a random REF position at least minDistToTx away from every TX,
-    % rejecting numerically ill-conditioned REF locations.
+    % SAMPLE_RANDOM_POINT_FAR_FROM_TX  Random REF position at least
+    % minDistToTx from every TX.
 
     areaSpan = areaMax - areaMin;
     centroid = mean(txPos, 1);
     txGeomInfo = compute_tx_polygon_info(txPos);
 
-    % REF remains random over the field and is not forced inside the TX polygon.
-    % However, extremely distant/ill-conditioned REF locations are rejected
-    % because they create receiver-centric TDOA geometries that are numerically
-    % unstable rather than merely challenging.
+    % REF is not forced inside the TX hull, but very distant REF positions
+    % give ill-conditioned TDOA geometry and are rejected.
     maxRefCentroidDist = 0.72 * sqrt(2) * areaSpan;
     minRefGeomScore = 0.06;
     maxRefCond = 250;
@@ -38,7 +36,7 @@ function p = sample_random_point_far_from_tx(txPos, areaMin, areaMax, minDistToT
         end
     end
 
-    % Relax only if the random field is extremely constrained.
+    % Relaxed retry: TX distance check only (0.6 x minDistToTx).
     for ii = 1:maxTry
         cand = areaMin + margin + (areaSpan - 2*margin) * rand(1,2);
         dTx = sqrt(sum((txPos - cand).^2, 2));

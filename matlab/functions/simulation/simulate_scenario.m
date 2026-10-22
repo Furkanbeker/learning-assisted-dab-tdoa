@@ -1,12 +1,6 @@
 function [scenarioRows, summary] = simulate_scenario(iscenario, cfg)
     % SIMULATE_SCENARIO  Simulate one random scenario and build its dataset rows.
     %
-    % A scenario consists of a random TX/REF layout, one UAV trajectory and
-    % cfg.numMeas measurements. For every measurement the function
-    % simulates the TX-RX links, estimates the PRS-based TOAs, forms the
-    % receiver-centric TDOAs, runs the multi-start weighted GN solver and
-    % the adaptive CT-EKF, and stores all features and labels in one row.
-    %
     % Inputs
     %   iscenario  scenario index (also used to seed the random generator)
     %   cfg        configuration struct built in generate_dab_tdoa_dataset.m
@@ -32,17 +26,14 @@ function [scenarioRows, summary] = simulate_scenario(iscenario, cfg)
     summaryTemplate        = cfg.summaryTemplate;
     master_waveform_id_val = cfg.master_waveform_id_val;
 
-    % Each scenario has its own deterministic seed, so the results do not
-    % depend on the (parallel) execution order.
+    % Per-scenario seed: results do not depend on parfor execution order.
     rng(scenarioSeedBase + iscenario, 'twister');
     localRowCells = cell(numMeas, 1);
 
     fprintf('Scenario %d / %d\n', iscenario, numScenarios);
 
     %% Geometry and UAV motion
-    % Random TX/REF layout and UAV trajectory. TX coordinates are also
-    % stored relative to REF (txRel), which is the frame used by the AI
-    % features and targets.
+    % txRel: TX positions relative to REF (frame of the AI features).
 
     [txPos, refPos, uavPath, uavCenter, uavScale, startDeg, clockwise, motionType] = ...
         generate_random_geometry_and_uav_motion(numTx, areaMin, areaMax, minRefToTx, numMeas, iscenario);
@@ -136,8 +127,8 @@ function [scenarioRows, summary] = simulate_scenario(iscenario, cfg)
 
         posErr_m = norm(xHat - truePos);
 
-        % Geometry metrics at the true UAV position (used for evaluation
-        % only) and at the GN estimate (observable, used as AI features).
+        % Geometry at the true position (evaluation only) and at the GN
+        % estimate (AI features).
         [uavGeomTrueInfo, gdopTrueInfo, geometry_score_true, geometry_class_true] = ...
             evaluate_point_geometry(truePos, txPos, refPos, refGeomInfo, txGeomInfo);
 
@@ -145,7 +136,7 @@ function [scenarioRows, summary] = simulate_scenario(iscenario, cfg)
             evaluate_point_geometry(xHat, txPos, refPos, refGeomInfo, txGeomInfo);
 
         %% Adaptive CT-EKF filtering of the GN estimate
-        % The tracker uses only observable quantities (no ground truth).
+        % Uses observable quantities only.
         [tracker, ekfPos, ekfToGnDist, ekfWasReset] = update_adaptive_ctekf( ...
             tracker, imeas, xHat, gnInfo, validTdoa, tdoaWeights, toaConfVals, ...
             geometry_score_est, gdopEstInfo, txGeomInfo, refPos, ...
@@ -171,9 +162,7 @@ function [scenarioRows, summary] = simulate_scenario(iscenario, cfg)
             refGeomInfo.pointToCentroidDist];
 
         %% Dataset row
-        % Positions are expressed relative to REF (suffix _rel) and in the
-        % absolute field frame (suffix _abs). Errors are defined as
-        % true minus estimate.
+        % _rel: relative to REF, _abs: field frame. Errors are true minus estimate.
 
         row = rowTemplate;
 

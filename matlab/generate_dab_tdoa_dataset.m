@@ -1,36 +1,17 @@
 %% ========================================================================
 %  generate_dab_tdoa_dataset.m
 %
-%  Dataset generation for the paper
-%    "Learning-Assisted Receiver-Centric TDOA Localization Using DAB
-%     Signals of Opportunity" (submitted to IEEE Access).
+%  Dataset generation for "Learning-Assisted Receiver-Centric TDOA
+%  Localization Using DAB Signals of Opportunity".
 %
-%  What this script does
-%  ---------------------
-%  For each random scenario, four DAB transmitters (TX), one static
-%  reference receiver (REF) and one UAV receiver are placed in a
-%  5000 m x 5000 m field. The UAV follows one of four trajectories
-%  (circle, line, sine, sine2). At every time step:
-%    1) each TX-RX link is simulated (delay + TX timing offset, FSPL, AWGN)
-%       using a real DAB Mode-I baseband waveform,
-%    2) the TOA is estimated from the DAB Phase Reference Symbol (PRS),
-%    3) receiver-centric TDOAs (UAV minus REF) are solved with a
-%       multi-start weighted Gauss-Newton (GN) solver,
-%    4) the GN fixes are tracked by a maneuver-adaptive constant-turn
-%       extended Kalman filter (CT-EKF).
-%  All features, labels and errors are stored per measurement. The
-%  AI-ready CSV is the input of the Python training pipeline (../python).
+%  Each scenario places four DAB transmitters, a static reference receiver
+%  (REF) and a UAV receiver in a 5 km x 5 km field. The UAV follows a
+%  circle, line, sine or sine2 trajectory. Per time step: link simulation
+%  with a real DAB Mode-I waveform, PRS-based TOA estimation, multi-start
+%  weighted GN on UAV-minus-REF TDOAs, and CT-EKF tracking.
 %
-%  How to run
-%  ----------
-%    1) Put the DAB IQ file in ../data/dab_iq/ (see README).
-%    2) Adjust the USER SETTINGS below if needed (e.g. a smaller
-%       numScenarios for a quick test).
-%    3) Run this script from MATLAB. All helper functions in ./functions
-%       are added to the path automatically.
-%
-%  Outputs are written to ../results/dab_soop_tdoa_dataset_<timestamp>/.
-%  See README.md for the list of output files and the requirements.
+%  Input : data/dab_iq/basic.cf32 (relative to the repository root)
+%  Output: results/dab_soop_tdoa_dataset_<timestamp>/
 %% ========================================================================
 
 clear; clc; close all;
@@ -52,17 +33,15 @@ iqFile = fullfile(repoRoot, 'data', 'dab_iq', 'basic.cf32');
 fs = 2.048e6;             % Sampling rate of the IQ file (Hz)
 masterDurationSec = 2;    % Length of the waveform segment used (s)
 
-% Carrier frequencies (Hz) of the four DAB transmitters. They are used
-% only for the FSPL computation.
+% Carrier frequencies of the four transmitters (Hz), used only for FSPL.
 txFreqHz = [195.936e6, 199.360e6, 202.928e6, 206.352e6];
 
 % --- Signal processing --------------------------------------------------
 c = 3e8;                  % Propagation speed (m/s)
 searchMaxLag = 256;       % Half-width of the PRS TOA search window (samples)
 
-% Length of each received observation window. A DAB Mode-I frame lasts
-% 96 ms, so with a 10 ms window only the first PRS of the waveform falls
-% inside the window and the multi-frame TOA estimator uses a single PRS.
+% Observation window length. A Mode-I frame lasts 96 ms, so a 10 ms
+% window contains a single PRS.
 viewDuration_ms = 10;
 
 % --- Scenarios ------------------------------------------------------------
@@ -74,10 +53,8 @@ areaMin = 0;              % Square operating field [areaMin, areaMax]^2 (m)
 areaMax = 5000;
 minRefToTx = 250;         % Minimum REF-to-TX distance (m)
 
-% Per-TX timing offsets, drawn uniformly in [offsetMinNs, offsetMaxNs] for
-% each scenario. In receiver-centric TDOA the offset is seen by both REF
-% and UAV and cancels in tau_uav - tau_ref, but it still shifts the
-% absolute PRS arrival time and therefore affects the TOA extraction.
+% Per-TX timing offsets (ns), uniform per scenario. They cancel in
+% tau_uav - tau_ref but still shift the absolute PRS arrival time.
 offsetMinNs = -5000;
 offsetMaxNs =  5000;
 
@@ -103,8 +80,8 @@ fprintf('Loaded IQ file: %s\n', iqFile);
 fprintf('Complex samples: %d\n', numel(txIQ_full));
 fprintf('Duration: %.3f s\n', numel(txIQ_full)/fs);
 
-% The first masterDurationSec seconds are used as the transmitted
-% waveform of every TX. The segment is peak-normalized.
+% The first masterDurationSec seconds, peak-normalized, are transmitted
+% by every TX.
 Nmaster = round(masterDurationSec * fs);
 assert(numel(txIQ_full) >= Nmaster, 'IQ file shorter than requested master duration.');
 
@@ -137,9 +114,8 @@ numTx = numel(txFreqHz);
 
 %% 4) PARALLEL POOL (OPTIONAL)
 
-% Results are identical with or without a pool, because every scenario
-% seeds its own random generator. Without the Parallel Computing Toolbox
-% the parfor loop below simply runs serially.
+% Each scenario seeds its own RNG, so results do not depend on the pool.
+% Without the Parallel Computing Toolbox the parfor loop runs serially.
 hasParallelToolbox = ~isempty(ver('parallel')) && ...
     license('test', 'Distrib_Computing_Toolbox');
 
@@ -196,9 +172,8 @@ end
 
 %% 7) BUILD TABLES
 
-% datasetBalanced : full per-measurement table (all scenarios, all columns).
-%                   The variable name is kept for compatibility with the
-%                   saved MAT file; no class re-balancing is applied.
+% datasetBalanced : per-measurement table, all columns (name kept for the
+%                   MAT file; no re-balancing is applied).
 % scenarioSummary : one row per scenario.
 datasetRows = vertcat(datasetRowsByScenario{:});
 datasetBalanced = struct2table(datasetRows);
@@ -232,8 +207,7 @@ excludedFeatureNames = [ ...
      'split'}, ...
     tdoaTargetNames];
 
-% Candidate model inputs: all remaining numeric columns. The Python
-% pipeline builds its own feature set from these columns.
+% Candidate model inputs: remaining numeric columns.
 featureNames = setdiff(datasetAI.Properties.VariableNames, excludedFeatureNames, 'stable');
 featureNames = keep_numeric_table_variables(datasetAI, featureNames);
 
@@ -290,14 +264,14 @@ if makeFigures
     disp(figFolder);
 end
 
-%% 11) GN VS CT-EKF PERFORMANCE TABLES (TABLES 2 AND 3 OF THE PAPER)
+%% 11) GN VS CT-EKF PERFORMANCE TABLES
 
 fprintf('\n\n');
 fprintf('============================================================\n');
 fprintf('FINAL RESULT TABLES: GN vs CT-EKF PERFORMANCE SUMMARY\n');
 fprintf('============================================================\n');
 
-[Table2_Overall_GN_CTEKF, Table3_Motion_GN_CTEKF] = ...
+[overallTable, motionTable] = ...
     compute_performance_tables(datasetBalanced, outputFolder);
 
 fprintf('============================================================\n\n');

@@ -1,13 +1,9 @@
-function [Table2_Overall_GN_CTEKF, Table3_Motion_GN_CTEKF] = compute_performance_tables(Tctekf, tableOutDir)
+function [overallTable, motionTable] = compute_performance_tables(Tctekf, tableOutDir)
     % COMPUTE_PERFORMANCE_TABLES  GN vs CT-EKF localization error tables.
     %
-    % Table 2: overall error statistics (mean, median, RMSE, P90/P95/P99,
-    %          max) of GN and CT-EKF over all rows of Tctekf.
-    % Table 3: the same comparison per UAV motion type.
-    % (Table numbers refer to the corresponding tables in the paper.)
-    %
-    % Both tables are printed and saved as CSV files in tableOutDir.
-    % The function can also be used on its own, e.g.
+    % overallTable: mean, median, RMSE, P90/P95/P99 and max error over all rows.
+    % motionTable : per-motion-type comparison.
+    % Both are printed and saved as CSV in tableOutDir. Standalone use:
     %   T = readtable('results/<run>/dab_soop_tdoa_ctekf.csv');
     %   compute_performance_tables(T, 'results/<run>');
     %
@@ -20,7 +16,6 @@ function [Table2_Overall_GN_CTEKF, Table3_Motion_GN_CTEKF] = compute_performance
         tableOutDir = pwd;
     end
 
-    % Check that the required columns are present.
     requiredCols = {'gn_pos_err_m', 'ctekf_pos_err_m', 'motion_type'};
     missingCols = setdiff(requiredCols, Tctekf.Properties.VariableNames);
 
@@ -36,7 +31,7 @@ function [Table2_Overall_GN_CTEKF, Table3_Motion_GN_CTEKF] = compute_performance
     ctekfErr = ctekfErr(validMask);
 
     % ------------------------------------------------
-    % Table 2: Overall GN vs CT-EKF Performance
+    % Overall GN vs CT-EKF performance
     % ------------------------------------------------
 
     gnMean    = mean(gnErr);
@@ -55,7 +50,7 @@ function [Table2_Overall_GN_CTEKF, Table3_Motion_GN_CTEKF] = compute_performance
     ekfP99    = prctile(ctekfErr, 99);
     ekfMax    = max(ctekfErr);
 
-    Table2_Overall_GN_CTEKF = table( ...
+    overallTable = table( ...
         ["GN"; "CT-EKF"; "CT-EKF Gain"], ...
         [gnMean; ekfMean; gnMean - ekfMean], ...
         [gnMedian; ekfMedian; gnMedian - ekfMedian], ...
@@ -77,19 +72,18 @@ function [Table2_Overall_GN_CTEKF, Table3_Motion_GN_CTEKF] = compute_performance
     );
 
     fprintf('\n');
-    fprintf('TABLE 2 - Overall GN vs CT-EKF Performance\n');
+    fprintf('Overall GN vs CT-EKF Performance\n');
     fprintf('------------------------------------------------------------\n');
-    disp(Table2_Overall_GN_CTEKF);
+    disp(overallTable);
 
     % ------------------------------------------------
-    % Table 3: Motion-Type-Based Performance
+    % Performance per motion type
     % ------------------------------------------------
 
     motionCol = string(Tctekf.motion_type);
     motionCol = motionCol(validMask);
 
-    % Display order of the motion types. Any other motion type present in the
-    % data (e.g., "am_sine") is appended after these.
+    % Display order.
     preferredMotionOrder = ["circle"; "line"; "sine"; "sine2"];
 
     availableMotions = unique(motionCol, 'stable');
@@ -135,7 +129,7 @@ function [Table2_Overall_GN_CTEKF, Table3_Motion_GN_CTEKF] = compute_performance
 
     end
 
-    Table3_Motion_GN_CTEKF = table( ...
+    motionTable = table( ...
         Motion_Type, ...
         N, ...
         GN_Mean_m, ...
@@ -148,24 +142,24 @@ function [Table2_Overall_GN_CTEKF, Table3_Motion_GN_CTEKF] = compute_performance
     );
 
     fprintf('\n');
-    fprintf('TABLE 3 - Motion-Type-Based GN vs CT-EKF Performance\n');
+    fprintf('GN vs CT-EKF Performance per Motion Type\n');
     fprintf('------------------------------------------------------------\n');
-    disp(Table3_Motion_GN_CTEKF);
+    disp(motionTable);
 
     % ------------------------------------------------
-    % Save final tables
+    % Save tables
     % ------------------------------------------------
 
-    table2File = fullfile(tableOutDir, 'table2_overall_gn_ctekf.csv');
-    table3File = fullfile(tableOutDir, 'table3_motion_gn_ctekf.csv');
+    overallFile = fullfile(tableOutDir, 'gn_ctekf_overall.csv');
+    motionFile = fullfile(tableOutDir, 'gn_ctekf_by_motion.csv');
 
-    writetable(Table2_Overall_GN_CTEKF, table2File);
-    writetable(Table3_Motion_GN_CTEKF, table3File);
+    writetable(overallTable, overallFile);
+    writetable(motionTable, motionFile);
 
     fprintf('\n');
     fprintf('Saved final performance tables:\n');
-    fprintf('  Table 2: %s\n', table2File);
-    fprintf('  Table 3: %s\n', table3File);
+    fprintf('  %s\n', overallFile);
+    fprintf('  %s\n', motionFile);
 
     fprintf('\n');
     fprintf('Short final interpretation:\n');

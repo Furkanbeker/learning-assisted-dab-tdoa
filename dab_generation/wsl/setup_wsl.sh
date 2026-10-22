@@ -2,7 +2,7 @@
 # =============================================================================
 # setup_wsl.sh
 #
-# Installs the tools needed by the DAB transmit chain inside WSL (Ubuntu):
+# Installs the DAB transmit chain tools inside WSL (Ubuntu):
 #   - ffmpeg / ffprobe          audio conversion
 #   - odr-audioenc              audio -> DAB+ payload (.dabp)
 #   - odr-dabmux                DAB+ payload -> ETI stream
@@ -12,10 +12,8 @@
 # Usage (inside WSL):
 #   bash setup_wsl.sh
 #
-# If the odr-* or SoapySDR packages are not available for your
-# distribution, build them from source (see the Opendigitalradio
-# documentation). odr-dabmod must be built with SoapySDR support to
-# transmit with the PlutoSDR.
+# Missing odr-* or SoapySDR packages must be built from source
+# (Opendigitalradio). odr-dabmod needs SoapySDR support for the PlutoSDR.
 # =============================================================================
 set -euo pipefail
 

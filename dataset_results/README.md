@@ -23,13 +23,25 @@ dataset_results/
 │   └── dab_soop_tdoa_ai_ready_gn_correction_part10_scenarios_09001-10000.csv.gz
 ├── dab_soop_tdoa_summary.csv                One row per scenario (10,000 rows)
 ├── tables/
-│   ├── table2_overall_gn_ctekf.csv          GN vs CT-EKF error statistics (full dataset)
-│   └── table3_motion_gn_ctekf.csv           GN vs CT-EKF per motion type (full dataset)
+│   ├── gn_ctekf_overall.csv                 GN vs LC-CT-EKF error statistics (full dataset)
+│   └── gn_ctekf_by_motion.csv               GN vs LC-CT-EKF per motion type (full dataset)
 ├── figures/
-│   ├── png/                                 Diagnostic figures (PNG)
+│   ├── png/                                 Selected diagnostic figures (PNG)
 │   └── matlab_fig/                          Same figures as editable MATLAB .fig files
 └── SHA256SUMS                               Checksums of every file in this folder
 ```
+
+| Figure | Content |
+|---|---|
+| `mean_abs_tdoa_error_histogram` | Per-epoch link-averaged absolute TDOA error (Fig. 4 of the paper) |
+| `snr_ref_vs_uav_histogram` | Simulation-derived link SNR proxies of REF and UAV (Fig. 5) |
+| `peak_ref_vs_uav_histogram` | Normalized PRS correlation peak of REF and UAV |
+| `noise_power_vs_gn_error` | GN error vs. AWGN level |
+| `uav_positions_colored_by_gn_error` | UAV positions colored by the GN error |
+| `scenario_geometry_vs_gn_ctekf_error` | Scenario geometry score vs. GN / LC-CT-EKF error |
+
+`matlab/generate_dab_tdoa_dataset.m` writes these and eight more
+diagnostic figures with the same file names.
 
 | Table | Rows | Columns | Uncompressed size | Compressed size |
 |---|---|---|---|---|
@@ -97,11 +109,12 @@ for name in ["dab_soop_tdoa_ctekf", "dab_soop_tdoa_ai_ready_gn_correction"]:
                 shutil.copyfileobj(src, out)
 ```
 
-The reassembled AI-ready CSV can be passed to the Python pipeline:
+The Python pipeline reads the parts directly, so reassembly is not needed
+for it:
 
 ```bash
 cd python
-python run_ai_pipeline.py --data ../dataset_results/dab_soop_tdoa_ai_ready_gn_correction.csv
+python run_ai_pipeline.py      # default: ../dataset_results/dab_soop_tdoa_ai_ready_gn_correction/
 ```
 
 ## Integrity check
@@ -149,5 +162,5 @@ for evaluation, never as model inputs; the feature construction is in
 [`python/dab_tdoa/features.py`](../python/dab_tdoa/features.py).
 
 > Note: `tables/` and the figures are computed by MATLAB over the **full**
-> dataset, whereas the learning results in the paper are computed on the
-> **test** split.
+> dataset, whereas the results in [`ai_results/`](../ai_results/README.md)
+> and in Tables 4–6 of the paper are computed on the **test** split.

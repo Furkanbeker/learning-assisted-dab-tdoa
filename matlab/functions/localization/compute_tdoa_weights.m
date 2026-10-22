@@ -1,9 +1,8 @@
 function [tdoaWeights, validTdoa] = compute_tdoa_weights(toaConfVals, estDelta, maxExpectedDelta_s)
     % COMPUTE_TDOA_WEIGHTS  Weight and validity flag for each receiver-centric TDOA.
     %
-    % The weight of TDOA k is the geometric mean of the REF and UAV TOA
-    % confidences. A TDOA is valid if |TDOA| is physically possible for
-    % the field size (<= maxExpectedDelta_s) and its weight is >= 0.10.
+    % Weight = geometric mean of the REF and UAV TOA confidences. Valid if
+    % |TDOA| <= maxExpectedDelta_s and weight >= 0.10.
     %
     % Inputs
     %   toaConfVals        numTx x 2 TOA confidences (column 1 = REF, 2 = UAV)

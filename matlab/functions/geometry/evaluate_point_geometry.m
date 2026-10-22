@@ -1,8 +1,7 @@
 function [pointInfo, gdopInfo, geometryScore, geometryClass] = evaluate_point_geometry(pointPos, txPos, refPos, refGeomInfo, txGeomInfo)
     % EVALUATE_POINT_GEOMETRY  Geometry metrics of the TDOA setup at one UAV position.
     %
-    % Used both at the true UAV position (evaluation only) and at the GN
-    % estimate (observable, used as AI features).
+    % Called at the true position (evaluation) and at the GN estimate (features).
     %
     % Outputs
     %   pointInfo      hull membership and distance to the TX centroid

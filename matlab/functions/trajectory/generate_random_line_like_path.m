@@ -1,9 +1,10 @@
 function [path, centerPos, scaleValue] = generate_random_line_like_path( ...
     areaMin, areaMax, fieldMargin, u, v, halfLength0, amplitude0, cycles, numPts, t, envelopeMode)
-    % Generate a straight or sinusoidal path along direction u with lateral
-    % offsets along v. amplitude0 = 0 or cycles = 0 gives a straight line.
-    % If the path does not fit inside the field, its length and amplitude
-    % are shrunk iteratively.
+    % GENERATE_RANDOM_LINE_LIKE_PATH  Straight or sinusoidal path along u
+    % with lateral offset along v.
+    %
+    % amplitude0 = 0 or cycles = 0 gives a straight line. Length and
+    % amplitude shrink until the path fits inside the field.
 
     if nargin < 11
         envelopeMode = "constant";
@@ -24,9 +25,7 @@ function [path, centerPos, scaleValue] = generate_random_line_like_path( ...
             offset = zeros(numPts,1);
         else
             if strcmpi(char(envelopeMode), 'contract_expand')
-                % Large amplitude at the beginning/end, small amplitude near the
-                % middle. This visually resembles an AM envelope that narrows and
-                % then widens again.
+                % Amplitude large at both ends, small in the middle.
                 envelope = 0.22 + 0.78 * abs(2*t - 1);
                 envelope = smoothstep01(envelope);
             else
@@ -52,8 +51,7 @@ function [path, centerPos, scaleValue] = generate_random_line_like_path( ...
         end
     end
 
-    % Robust fallback: generate a shorter centered path that is guaranteed to
-    % remain inside the field after clipping.
+    % Fallback: shorter path near the field center.
     centerPos = [areaMin + 0.5*areaSpan, areaMin + 0.5*areaSpan] + 0.20*areaSpan*(rand(1,2)-0.5);
     halfLength = min(halfLength, 0.25*areaSpan);
     amplitude = min(amplitude, 0.06*areaSpan);

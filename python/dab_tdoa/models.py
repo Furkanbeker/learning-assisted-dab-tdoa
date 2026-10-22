@@ -1,4 +1,4 @@
-"""Regression models: creation, training, prediction and ensembling."""
+"""Regressor families, training, prediction and ensembling."""
 
 import time
 
@@ -10,51 +10,71 @@ from sklearn.multioutput import MultiOutputRegressor
 from . import config as cfg
 
 
-def make_models() -> dict:
-    models = {}
+def make_single_model(name: str, random_state: int = cfg.RANDOM_SEED):
+    """One regressor family with the fixed hyperparameters of the paper."""
+    name = str(name).lower().strip()
 
-    if cfg.TRAIN_LGBM:
+    if name == "lgbm":
         try:
             from lightgbm import LGBMRegressor
-            models["lgbm"] = MultiOutputRegressor(LGBMRegressor(
-                n_estimators=1200, learning_rate=0.030,
-                num_leaves=63, subsample=0.85, colsample_bytree=0.85,
-                reg_lambda=5.0, reg_alpha=0.05, min_child_samples=15,
-                random_state=cfg.RANDOM_SEED, n_jobs=-1, verbose=-1,
-            ))
-            print("  [OK] LightGBM")
-        except ImportError:
-            print("  [SKIP] LightGBM is not installed")
+        except ImportError as exc:
+            raise RuntimeError("LightGBM requested but not installed.") from exc
+        return MultiOutputRegressor(LGBMRegressor(
+            n_estimators=1200, learning_rate=0.030,
+            num_leaves=63, subsample=0.85, colsample_bytree=0.85,
+            reg_lambda=5.0, reg_alpha=0.05, min_child_samples=15,
+            random_state=random_state, n_jobs=-1, verbose=-1,
+        ))
 
-    if cfg.TRAIN_XGB:
+    if name == "xgb":
         try:
             from xgboost import XGBRegressor
-            models["xgb"] = MultiOutputRegressor(XGBRegressor(
-                n_estimators=1000, max_depth=6, learning_rate=0.030,
-                subsample=0.85, colsample_bytree=0.85,
-                reg_lambda=5.0, reg_alpha=0.05,
-                tree_method="hist", random_state=cfg.RANDOM_SEED, n_jobs=-1,
-            ))
-            print("  [OK] XGBoost")
-        except ImportError:
-            print("  [SKIP] XGBoost is not installed")
+        except ImportError as exc:
+            raise RuntimeError("XGBoost requested but not installed.") from exc
+        return MultiOutputRegressor(XGBRegressor(
+            n_estimators=1000, max_depth=6, learning_rate=0.030,
+            subsample=0.85, colsample_bytree=0.85,
+            reg_lambda=5.0, reg_alpha=0.05,
+            tree_method="hist", random_state=random_state, n_jobs=-1,
+        ))
 
-    if cfg.TRAIN_ET:
-        models["et"] = ExtraTreesRegressor(
+    if name == "et":
+        return ExtraTreesRegressor(
             n_estimators=500, min_samples_leaf=3,
-            max_features=0.80, random_state=cfg.RANDOM_SEED, n_jobs=-1,
+            max_features=0.80, random_state=random_state, n_jobs=-1,
         )
-        print("  [OK] ExtraTrees")
 
-    if cfg.TRAIN_HGB:
-        models["hgb"] = MultiOutputRegressor(HistGradientBoostingRegressor(
+    if name == "hgb":
+        return MultiOutputRegressor(HistGradientBoostingRegressor(
             learning_rate=0.04, max_iter=800,
             max_leaf_nodes=48, min_samples_leaf=15,
             l2_regularization=0.02,
             early_stopping=True, validation_fraction=0.10,
-            n_iter_no_change=30, random_state=cfg.RANDOM_SEED,
+            n_iter_no_change=30, random_state=random_state,
         ))
-        print("  [OK] HistGradientBoosting")
+
+    raise ValueError(f"Unknown model family: {name}")
+
+
+def make_models() -> dict:
+    """All enabled regressor families."""
+    requested = []
+    if cfg.TRAIN_LGBM:
+        requested.append("lgbm")
+    if cfg.TRAIN_XGB:
+        requested.append("xgb")
+    if cfg.TRAIN_ET:
+        requested.append("et")
+    if cfg.TRAIN_HGB:
+        requested.append("hgb")
+
+    models = {}
+    for name in requested:
+        try:
+            models[name] = make_single_model(name, cfg.RANDOM_SEED)
+            print(f"  [OK] {name}")
+        except (ImportError, RuntimeError) as exc:
+            print(f"  [SKIP] {name}: {exc}")
 
     if not models:
         raise RuntimeError("No model could be created. "
@@ -75,7 +95,7 @@ def _fit_one(name, model, X_tr, y_tr):
 
 
 def train_all_models(X_tr, y_tr, scaler_y=None):
-    """Train all enabled models. If scaler_y is given, the targets are scaled."""
+    """Train all enabled families; targets are scaled if scaler_y is given."""
     y_fit = y_tr if scaler_y is None else scaler_y.fit_transform(y_tr)
     models = make_models()
     trained = {}
